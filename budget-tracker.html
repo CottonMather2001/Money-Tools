@@ -149,6 +149,7 @@ details.panel > summary{cursor:pointer;font-family:var(--display);font-weight:60
 .askbox textarea{width:100%;min-height:170px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-family:ui-monospace,Menlo,monospace;font-size:.8rem;padding:10px;line-height:1.45}
 .askbox a.btn{text-decoration:none;text-align:center}
 .askbtn{display:inline-flex;align-items:center;gap:8px}
+.opts{margin:0 0 12px;padding-left:1.2em;display:grid;gap:6px}
 </style>
 </head>
 <body>
@@ -237,21 +238,29 @@ details.panel > summary{cursor:pointer;font-family:var(--display);font-weight:60
 
   <section>
     <details class="panel backup" id="backup">
-      <summary>Back up or move your data</summary>
-      <p class="foot">Your data is saved only in this browser on this device. It isn't sent anywhere, and nobody else can see it, including whoever sent you this file. Clearing your browser data erases it, so save a copy now and then.</p>
-      <p class="foot"><strong>Save a copy with my data</strong> saves this whole page as a new file with everything you've entered inside it. Open that file next time, on this device or another, and your data is there. <strong>Download backup</strong> saves just the data, to load with Restore.</p>
+      <summary>Save, back up or move your data</summary>
+      <p class="foot">Your data is saved in this browser on this device, and nobody else can see it. Browsers can forget it (for example when site data is cleared), so keep a copy somewhere else too. Pick whichever is easiest:</p>
+      <ul class="foot opts">
+        <li><strong>Save to Claude:</strong> copies your data with a short note and opens Claude. Paste it and send. Your data then lives in that chat in your own Claude account (a free account works), and you can ask Claude about it there. To bring it back, open that chat, copy your message, and use <em>Paste backup text</em> below. If your Claude plan has Projects, you can also upload the backup file to a Project.</li>
+        <li><strong>Save backup file:</strong> on a phone, pick Save to Files, iCloud Drive, Google Drive or another app. On a computer it downloads. Load it again with <em>Restore from file</em>.</li>
+        <li><strong>Save a copy with my data:</strong> saves this whole page with your data inside it, as a file you can open on any computer.</li>
+      </ul>
       <div class="tools">
-        <button class="btn primary" id="savecopy">Save a copy with my data</button>
-        <button class="btn" id="dl">Download backup</button>
-        <label class="btn" for="restore">Restore from backup</label>
-        <input type="file" id="restore" accept=".json,application/json" hidden>
+        <a class="btn primary" id="toclaude" href="https://claude.ai/new" target="_blank" rel="noopener">Save to Claude</a>
+        <button class="btn" id="dl">Save backup file</button>
+        <button class="btn" id="savecopy">Save a copy with my data</button>
+      </div>
+      <div class="tools" style="margin-top:8px">
+        <label class="btn" for="restore">Restore from file</label>
+        <input type="file" id="restore" accept=".json,.txt,application/json,text/plain" hidden>
+        <button class="btn" id="pasteopen">Paste backup text</button>
         <button class="btn danger" id="erase">Erase my data</button>
       </div>
       <p class="status" id="bstatus" style="margin-top:8px"></p>
       <div id="copybox" hidden>
-        <p class="foot">Downloads aren't available here. Copy this text and save it in a note or file; paste it back below to restore.</p>
+        <p class="foot">Paste your backup text here, from your Claude chat or a note. Extra text around the BEGIN and END lines is fine.</p>
         <textarea id="copytext" aria-label="Backup text"></textarea>
-        <div class="tools" style="margin-top:8px"><button class="btn small" id="copybtn">Copy</button><button class="btn small" id="pastebtn">Restore from pasted text</button></div>
+        <div class="tools" style="margin-top:8px"><button class="btn small" id="pastebtn">Restore from pasted text</button><button class="btn small" id="copybtn">Copy my current data instead</button></div>
       </div>
     </details>
   </section>
@@ -684,15 +693,29 @@ const bstatus=m=>{ document.getElementById('bstatus').textContent=m; };
 function backupText(){ return JSON.stringify(Object.assign({app:'statement-budget-tracker'},S)); }
 let dlNS; const getDL=()=>Promise.resolve({save:({filename,data})=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download=filename; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000); return Promise.resolve(); }});
 function showCopy(){ document.getElementById('copybox').hidden=false; document.getElementById('copytext').value=backupText(); }
+const BK_BEGIN='-----BEGIN BUDGET BACKUP-----', BK_END='-----END BUDGET BACKUP-----';
+function markBk(msg){ S.lastBackup=Date.now(); persist(); render(); bstatus(msg); }
 document.getElementById('dl').onclick=async()=>{
-  const ns=await getDL();
-  if(!ns){ showCopy(); return; }
-  try{ await ns.save({filename:'budget-backup-'+iso(new Date())+'.json',data:backupText()}); S.lastBackup=Date.now(); persist(); render(); bstatus('Backup downloaded.'); }
-  catch(err){ if(err&&err.code==='declined') bstatus('Download cancelled.'); else if(err&&err.code==='rate_limited') bstatus('A download is already waiting for you. Try again in a moment.'); else showCopy(); }
+  const name='budget-backup-'+iso(new Date())+'.json', data=backupText();
+  try{
+    const f=new File([data],name,{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})&&matchMedia('(pointer:coarse)').matches){ await navigator.share({files:[f],title:'Budget backup'}); markBk('Backup saved.'); return; }
+  }catch(err){ if(err&&err.name==='AbortError'){ bstatus('Cancelled.'); return; } }
+  fileDownload(name,data,'application/json'); markBk('Backup downloaded.');
 };
+function claudeSaveText(){ return "Please keep this budget data in this chat for me. It's a backup from my Money Tools budget tracker. Reply with a short summary of my spending compared with my plan, so I can recognize this chat later. Don't rewrite the backup block; when I want it back, I'll copy it from this message.\n\n"+askContext()+"\n\n"+BK_BEGIN+"\n"+backupText()+"\n"+BK_END; }
+document.getElementById('toclaude').addEventListener('click',()=>{
+  const t=claudeSaveText();
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject())
+    .then(()=>markBk('Copied. In the Claude tab, paste into the message box and send.'))
+    .catch(()=>{ document.getElementById('copybox').hidden=false; const ta=document.getElementById('copytext'); ta.value=t; ta.focus(); ta.select(); bstatus('Copy all the text in the box below, then paste it into Claude and send.'); });
+});
+document.getElementById('pasteopen').onclick=()=>{ const box=document.getElementById('copybox'), ta=document.getElementById('copytext'); box.hidden=false; ta.value=''; ta.focus(); bstatus(''); };
 function restoreFrom(text){
+  const i=text.indexOf(BK_BEGIN), j=text.indexOf(BK_END); if(i>=0&&j>i) text=text.slice(i+BK_BEGIN.length,j);
+  text=text.trim().replace(/^```[a-z]*\s*/i,'').replace(/```$/,'').trim();
   try{ const o=JSON.parse(text); if(!o||o.v!==1||!Array.isArray(o.txns)) throw 0; delete o.app; S=Object.assign(blankState(),o); persist(); pers=periodsList(); cur=pickCur(); render(); bstatus(`Restored ${S.txns.length} transactions.`); }
-  catch(e){ bstatus("That isn't a backup from this tracker. Choose the .json file you downloaded from here."); }
+  catch(e){ bstatus("That isn't a backup from this tracker. Use a backup file or backup text saved from this tracker."); }
 }
 document.getElementById('restore').addEventListener('change',async e=>{ const f=e.target.files[0]; e.target.value=''; if(f) restoreFrom(await f.text()); });
 document.getElementById('copybtn').onclick=()=>{ const ta=document.getElementById('copytext'); ta.value=backupText(); (navigator.clipboard?navigator.clipboard.writeText(ta.value):Promise.reject()).then(()=>bstatus('Copied.')).catch(()=>{ ta.select(); bstatus('Selected. Copy it with your keyboard or long-press.'); }); };
