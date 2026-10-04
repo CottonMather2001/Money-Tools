@@ -160,7 +160,7 @@ details.panel > summary{cursor:pointer;font-family:var(--display);font-weight:60
     <h1 id="ttl">My budget</h1>
     <div class="view" id="view" role="group" aria-label="Show spending by">
       <button type="button" data-mode="month" aria-pressed="true">Monthly</button>
-      <button type="button" data-mode="pay" aria-pressed="false">Bi-weekly</button>
+      <button type="button" data-mode="pay" aria-pressed="false">By paycheck</button>
     </div>
     <div class="monthnav">
       <button id="prev" aria-label="Previous month">‹</button>
@@ -182,7 +182,7 @@ details.panel > summary{cursor:pointer;font-family:var(--display);font-weight:60
   <div class="hero" id="hero"></div>
   <div class="flow" id="flow"></div>
 
-  <div class="tools" style="margin:-12px 0 30px"><button class="btn primary askbtn" id="askopen">Ask Claude about my spending</button></div>
+  <div class="tools" style="margin:-12px 0 30px"><button class="btn primary askbtn" id="askopen">Ask Claude about my spending</button><button class="btn askbtn" id="saveopen2">Save to Claude</button></div>
 
   <section>
     <h2>Spending plan</h2>
@@ -220,6 +220,22 @@ details.panel > summary{cursor:pointer;font-family:var(--display);font-weight:60
       <summary>Set up your plan</summary>
       <div class="field" style="max-width:420px;margin-bottom:6px"><label for="nm">Name shown at the top</label><input type="text" id="nm" placeholder="My budget" style="width:180px"></div>
 
+      <h3>Your pay schedule</h3>
+      <p class="foot">The <strong>By paycheck</strong> view splits your spending into your pay periods. Each plan amount is your monthly plan scaled to the number of days in the period.</p>
+      <div class="grid2" id="payset">
+        <div class="field"><label for="payfreq">I get paid</label><select id="payfreq">
+          <option value="auto">Figure it out from my deposits</option>
+          <option value="weekly">Every week</option>
+          <option value="biweekly">Every two weeks</option>
+          <option value="semimonthly">Twice a month</option>
+          <option value="monthly">Once a month</option>
+        </select></div>
+        <div class="field" id="pf_anchor"><label for="payanchor">A recent payday</label><input type="date" id="payanchor"></div>
+        <div class="field" id="pf_d1"><label for="payd1" id="payd1l">Payday (day of month)</label><input class="num" type="number" min="1" max="31" id="payd1"></div>
+        <div class="field" id="pf_d2"><label for="payd2">Second payday</label><input class="num" type="number" min="1" max="31" id="payd2"></div>
+      </div>
+      <p class="foot" id="paynote" style="margin-top:6px"></p>
+
       <h3>Monthly spending plan</h3>
       <p class="foot">How much you want to spend each month in each category. Leave a category at 0 if it isn't part of your plan. The starting amounts are only examples.</p>
       <div class="grid2" id="budgets"></div>
@@ -241,12 +257,12 @@ details.panel > summary{cursor:pointer;font-family:var(--display);font-weight:60
       <summary>Save, back up or move your data</summary>
       <p class="foot">Your data is saved in this browser on this device, and nobody else can see it. Browsers can forget it (for example when site data is cleared), so keep a copy somewhere else too. Pick whichever is easiest:</p>
       <ul class="foot opts">
-        <li><strong>Save to Claude:</strong> copies your data with a short note and opens Claude. Paste it and send. Your data then lives in that chat in your own Claude account (a free account works), and you can ask Claude about it there. To bring it back, open that chat, copy your message, and use <em>Paste backup text</em> below. If your Claude plan has Projects, you can also upload the backup file to a Project.</li>
+        <li><strong>Save to Claude:</strong> puts your data in a chat in your own Claude account (a free account works), where you can also ask Claude about it. Tap it for step-by-step instructions.</li>
         <li><strong>Save backup file:</strong> on a phone, pick Save to Files, iCloud Drive, Google Drive or another app. On a computer it downloads. Load it again with <em>Restore from file</em>.</li>
         <li><strong>Save a copy with my data:</strong> saves this whole page with your data inside it, as a file you can open on any computer.</li>
       </ul>
       <div class="tools">
-        <a class="btn primary" id="toclaude" href="https://claude.ai/new" target="_blank" rel="noopener">Save to Claude</a>
+        <button class="btn primary" id="saveopen">Save to Claude</button>
         <button class="btn" id="dl">Save backup file</button>
         <button class="btn" id="savecopy">Save a copy with my data</button>
       </div>
@@ -273,7 +289,7 @@ details.panel > summary{cursor:pointer;font-family:var(--display);font-weight:60
       <li>Tap <strong>Add CSV files</strong>. You can add several files at once, and adding the same file twice won't double count.</li>
       <li>Tap a category to see its charges and its monthly amount. Use the dropdown on any charge to move it to another category.</li>
       <li>Add your own rules for things only you would know: your employer, landlord, loan servicer, or a person you pay regularly.</li>
-      <li>Use <strong>Bi-weekly</strong> to see spending by paycheck. Pay periods start on each paycheck deposit, and each plan amount becomes the monthly amount × 12 ÷ 26.</li>
+      <li>Use <strong>By paycheck</strong> to see spending for each pay period. Set how often you're paid in <strong>Set up your plan</strong> (weekly, every two weeks, twice a month or monthly), or let the tracker find your paydays from your deposits.</li>
       <li>Tap <strong>Ask Claude about my spending</strong> to send your numbers to your own Claude chat for analysis (a free account works).</li>
       <li>Repeat each month. When you're done, tap <strong>Save a copy with my data</strong> and open that newest file next time. That way your data never depends on the browser remembering it.</li>
     </ol>
@@ -284,6 +300,22 @@ details.panel > summary{cursor:pointer;font-family:var(--display);font-weight:60
 </div>
 
 <script type="application/json" id="embedded">null</script>
+<div class="askbox" id="savebox" hidden role="dialog" aria-modal="true" aria-labelledby="savettl">
+  <div class="askp">
+    <h2 id="savettl">Save your data to Claude</h2>
+    <ol class="opts">
+      <li>Tap <strong>Copy and open Claude</strong> below. It copies your budget data and opens Claude in a new tab.</li>
+      <li>Sign in to Claude (a free account works). Tap the message box and paste. On a phone, press and hold inside the box, then tap <strong>Paste</strong>.</li>
+      <li>Tap send. Claude replies with a short summary. That chat now holds your data, and you can ask Claude about it anytime.</li>
+    </ol>
+    <p class="foot"><strong>To bring your data back</strong> (on a new phone, or after your browser forgets it): open that chat in Claude, press and hold your first message and tap <strong>Copy</strong>. Then come back here, open <em>Save, back up or move your data</em> at the bottom, tap <strong>Paste backup text</strong>, paste, and tap <strong>Restore from pasted text</strong>.</p>
+    <div class="tools">
+      <a class="btn primary" id="toclaude" href="https://claude.ai/new" target="_blank" rel="noopener">Copy and open Claude</a>
+      <button class="btn" id="saveclose">Close</button>
+    </div>
+    <p class="status" id="savestatus"></p>
+  </div>
+</div>
 <div class="askbox" id="askbox" hidden role="dialog" aria-modal="true" aria-labelledby="askttl">
   <div class="askp">
     <h2 id="askttl">Ask Claude about your spending</h2>
@@ -339,7 +371,7 @@ const RULES = [
 
 // ---------- storage ----------
 let storageOK = true;
-function blankState(){ return {v:1,name:'',budgets:Object.assign({},EXAMPLE_BUDGETS),stages:[],rules:[],overrides:{},txns:[],example:false}; }
+function blankState(){ return {v:1,name:'',pay:{freq:'auto',anchor:'',d1:1,d2:15},budgets:Object.assign({},EXAMPLE_BUDGETS),stages:[],rules:[],overrides:{},txns:[],example:false}; }
 function load(){
   const ok=s=>s&&s.v===1&&Array.isArray(s.txns);
   let loc=null; try{ const raw=localStorage.getItem(KEY); if(raw) loc=JSON.parse(raw); }catch(e){ storageOK=false; }
@@ -416,19 +448,41 @@ function daysIn(m){ const [y,mo]=m.split('-').map(Number); return new Date(y,mo,
 
 let mode='month';
 try{ const v=localStorage.getItem(KEY+':view'); if(v==='pay'||v==='month') mode=v; }catch(e){}
-// Pay periods run from one paycheck (an Income deposit of $300+) to the day before the next.
+// Pay periods follow the person's pay schedule; "auto" finds paydays from Income deposits of $300+.
+function payCfg(){ if(!S.pay) S.pay={freq:'auto',anchor:'',d1:1,d2:15}; return S.pay; }
+function dom(m,d){ return m+'-'+String(Math.min(Math.max(1,+d||1),daysIn(m))).padStart(2,'0'); }
+function monthAdd(m,n){ const [y,mo]=m.split('-').map(Number); const d=new Date(y,mo-1+n,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function fromPaydays(pays,first,last){
+  pays=[...new Set(pays)].sort();
+  const out=[]; for(let i=0;i<pays.length-1;i++){ const s=pays[i], e=addDays(pays[i+1],-1); if(e>=first&&s<=last) out.push({start:s,end:e,days:dayDiff(s,e)+1}); }
+  return out;
+}
 function periodsList(){
   if(!S.txns.length) return [];
   if(mode==='month') return monthsList().map(m=>({start:m+'-01',end:m+'-'+String(daysIn(m)).padStart(2,'0'),days:daysIn(m)}));
-  const first=S.txns.reduce((a,r)=>r[0]<a?r[0]:a,'9999'), last=lastDate();
+  const first=S.txns.reduce((a,r)=>r[0]<a?r[0]:a,'9999'), last=lastDate(), P=payCfg();
+  if((P.freq==='weekly'||P.freq==='biweekly')&&/^\d{4}-\d{2}-\d{2}$/.test(P.anchor||'')){
+    const step=P.freq==='weekly'?7:14; let d=P.anchor;
+    while(d>first) d=addDays(d,-step);
+    const pays=[]; for(; d<=addDays(last,step); d=addDays(d,step)) pays.push(d);
+    return fromPaydays(pays,first,last);
+  }
+  if(P.freq==='semimonthly'||P.freq==='monthly'){
+    const days=P.freq==='monthly'?[P.d1]:[P.d1,P.d2], pays=[];
+    for(let m=monthAdd(first.slice(0,7),-1); m<=monthAdd(last.slice(0,7),1); m=monthAdd(m,1)) days.forEach(d=>pays.push(dom(m,d)));
+    return fromPaydays(pays,first,last);
+  }
+  const step=P.freq==='weekly'?7:14;
   const raw=[...new Set(S.txns.filter(r=>r[2]<=-300&&catOf(r)==='Income').map(r=>r[0]))].sort();
-  const pays=[]; raw.forEach(d=>{ if(!pays.length||dayDiff(pays[pays.length-1],d)>=7) pays.push(d); });
+  const pays=[]; raw.forEach(d=>{ if(!pays.length||dayDiff(pays[pays.length-1],d)>=Math.min(7,step-1)) pays.push(d); });
   if(!pays.length) pays.push(first);
-  while(pays[0]>first) pays.unshift(addDays(pays[0],-14));
-  while(addDays(pays[pays.length-1],14)<=last) pays.push(addDays(pays[pays.length-1],14));
-  return pays.map((s,i)=>{ const e=i<pays.length-1?addDays(pays[i+1],-1):addDays(s,13); return {start:s,end:e,days:dayDiff(s,e)+1}; });
+  while(pays[0]>first) pays.unshift(addDays(pays[0],-step));
+  while(addDays(pays[pays.length-1],step)<=last) pays.push(addDays(pays[pays.length-1],step));
+  pays.push(addDays(pays[pays.length-1],step));
+  return fromPaydays(pays,first,last);
 }
-const scale=p=>mode==='month'?1:(12/26)*(p.days/14);
+// Monthly plan scaled to the number of days in the period (365.25 / 12 days in an average month).
+const scale=p=>mode==='month'?1:p.days*12/365.25;
 const unit=()=>mode==='month'?'month':'pay period';
 function periodLabel(p){ if(mode==='month'){ const [y,mo]=p.start.split('-').map(Number); return MONTHS[mo-1]+' '+y; } return shortDate(p.start)+' – '+shortDate(p.end); }
 function planFor(p){ const m=p.start.slice(0,7); let s=null; [...S.stages].filter(x=>x.from).sort((a,b)=>a.from<b.from?-1:1).forEach(x=>{ if(m>=x.from) s=x; }); return s; }
@@ -520,7 +574,7 @@ function render(){
 
   renderTrend(); renderWeekend(); renderSubs();
   document.getElementById('foot').textContent=`Transactions through ${new Date(ld+'T12:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}.`
-    +(mode==='pay'?' Pay periods run from one paycheck to the day before the next, and each plan amount is the monthly plan × 12 ÷ 26 (about 46%), adjusted if a period runs longer than two weeks.':'');
+    +(mode==='pay'?' Pay periods run from one payday to the day before the next, using the pay schedule in Set up your plan. Each plan amount is the monthly plan scaled to the number of days in the period.':'');
 }
 function renderEmpty(){
   document.getElementById('mlabel').textContent='No data yet';
@@ -538,7 +592,8 @@ function renderEmpty(){
 function renderTrend(){
   const c=selCat, bm=S.budgets[c]||0, u=unit();
   const vals=pers.map(p=>({p,v:periodData(p).by[c]||0,b:bm*scale(p)}));
-  const bStd=mode==='month'?bm:bm*12/26;
+  const typDays=pers.length?pers.map(p=>p.days).sort((a,b)=>a-b)[Math.floor(pers.length/2)]:14;
+  const bStd=mode==='month'?bm:bm*typDays*12/365.25;
   document.getElementById('trendtitle').textContent=c+' by '+u;
   const avg=vals.reduce((s,x)=>s+x.v,0)/vals.length;
   document.getElementById('trendcap').textContent=`Average ${money(avg)} a ${u}${bm?`, plan ${money(bStd)}`:''}. Tap a category above to change this chart.`;
@@ -577,6 +632,18 @@ function renderSubs(){
 // ---------- setup panel ----------
 function catOptions(sel){ return ALL_CATS.map(o=>`<option ${o===sel?'selected':''}>${o}</option>`).join(''); }
 function renderSetup(){
+  const P=payCfg(), pf=document.getElementById('payfreq');
+  if(!document.getElementById('payset').contains(document.activeElement)){
+    pf.value=P.freq; document.getElementById('payanchor').value=P.anchor||''; document.getElementById('payd1').value=P.d1||1; document.getElementById('payd2').value=P.d2||15;
+  }
+  document.getElementById('pf_anchor').hidden=!(P.freq==='weekly'||P.freq==='biweekly');
+  document.getElementById('pf_d1').hidden=!(P.freq==='semimonthly'||P.freq==='monthly');
+  document.getElementById('pf_d2').hidden=P.freq!=='semimonthly';
+  document.getElementById('payd1l').textContent=P.freq==='semimonthly'?'First payday (day of month)':'Payday (day of month)';
+  document.getElementById('paynote').textContent=
+    P.freq==='auto'?'The tracker treats deposits of $300 or more sorted as Income as paydays.'
+    :(P.freq==='weekly'||P.freq==='biweekly')&&!P.anchor?'Pick the date of any recent payday so the periods line up.'
+    :(P.freq==='semimonthly'||P.freq==='monthly')?'If a payday is past the end of a short month, the last day of that month is used.':'';
   const nm=document.getElementById('nm'); if(document.activeElement!==nm) nm.value=S.name||'';
   const bEl=document.getElementById('budgets');
   if(!bEl.contains(document.activeElement)) bEl.innerHTML=SPEND_ORDER.map(c=>`<div class="field"><label for="sb_${esc(c)}">${esc(c)}</label><input class="num" type="number" min="0" step="10" id="sb_${esc(c)}" data-budget="${esc(c)}" value="${S.budgets[c]||0}"></div>`).join('')
@@ -596,6 +663,14 @@ function renderSetup(){
 }
 function changed(){ persist(); render(); }
 
+document.getElementById('payset').addEventListener('change',e=>{
+  const P=payCfg(), t=e.target;
+  if(t.id==='payfreq') P.freq=t.value;
+  if(t.id==='payanchor') P.anchor=t.value;
+  if(t.id==='payd1') P.d1=Math.min(31,Math.max(1,+t.value||1));
+  if(t.id==='payd2') P.d2=Math.min(31,Math.max(1,+t.value||15));
+  t.blur(); persist(); pers=periodsList(); cur=pickCur(); render();
+});
 document.getElementById('nm').addEventListener('input',e=>{ S.name=e.target.value.slice(0,60); persist(); document.getElementById('ttl').textContent=S.name||'My budget'; });
 document.getElementById('setup').addEventListener('change',e=>{
   const t=e.target;
@@ -704,11 +779,17 @@ document.getElementById('dl').onclick=async()=>{
   fileDownload(name,data,'application/json'); markBk('Backup downloaded.');
 };
 function claudeSaveText(){ return "Please keep this budget data in this chat for me. It's a backup from my Money Tools budget tracker. Reply with a short summary of my spending compared with my plan, so I can recognize this chat later. Don't rewrite the backup block; when I want it back, I'll copy it from this message.\n\n"+askContext()+"\n\n"+BK_BEGIN+"\n"+backupText()+"\n"+BK_END; }
+function openSave(){ document.getElementById('savestatus').textContent=''; document.getElementById('savebox').hidden=false; document.getElementById('toclaude').focus(); }
+document.getElementById('saveopen').onclick=openSave;
+document.getElementById('saveopen2').onclick=openSave;
+document.getElementById('saveclose').onclick=()=>{ document.getElementById('savebox').hidden=true; };
+document.getElementById('savebox').addEventListener('click',e=>{ if(e.target.id==='savebox') document.getElementById('savebox').hidden=true; });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('savebox').hidden=true; });
 document.getElementById('toclaude').addEventListener('click',()=>{
   const t=claudeSaveText();
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject())
-    .then(()=>markBk('Copied. In the Claude tab, paste into the message box and send.'))
-    .catch(()=>{ document.getElementById('copybox').hidden=false; const ta=document.getElementById('copytext'); ta.value=t; ta.focus(); ta.select(); bstatus('Copy all the text in the box below, then paste it into Claude and send.'); });
+    .then(()=>{ markBk('Copied. In the Claude tab, paste into the message box and send.'); document.getElementById('savestatus').textContent='Copied. Now switch to the Claude tab, paste into the message box and send.'; })
+    .catch(()=>{ document.getElementById('savebox').hidden=true; document.getElementById('backup').open=true; document.getElementById('copybox').hidden=false; const ta=document.getElementById('copytext'); ta.value=t; ta.focus(); ta.select(); bstatus('Copy all the text in the box below, then paste it into Claude and send.'); });
 });
 document.getElementById('pasteopen').onclick=()=>{ const box=document.getElementById('copybox'), ta=document.getElementById('copytext'); box.hidden=false; ta.value=''; ta.focus(); bstatus(''); };
 function restoreFrom(text){
