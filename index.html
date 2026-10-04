@@ -5,31 +5,99 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Money Tools</title>
 <style>
-:root{--bg:#F1F3EE;--panel:#FFFFFF;--ink:#1B2620;--muted:#5D6B63;--line:#D6DDD5;--accent:#2D6A4F}
-@media (prefers-color-scheme: dark){:root{--bg:#111A15;--panel:#18241D;--ink:#E3ECE6;--muted:#97A89E;--line:#2B3A31;--accent:#7CC6A0;color-scheme:dark}}
+:root{--bg:#F1F3EE;--panel:#FFFFFF;--ink:#1B2620;--muted:#5D6B63;--line:#D6DDD5;--accent:#2D6A4F;--onaccent:#FFFFFF;--soft:#E3ECE5}
+@media (prefers-color-scheme: dark){:root{--bg:#111A15;--panel:#18241D;--ink:#E3ECE6;--muted:#97A89E;--line:#2B3A31;--accent:#7CC6A0;--onaccent:#0F1A14;--soft:#1F3027;color-scheme:dark}}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif}
 .wrap{max-width:720px;margin:0 auto;padding-inline:18px;padding-block:40px 64px}
 h1{font-size:clamp(2rem,7vw,2.8rem);margin:0 0 8px;letter-spacing:-0.02em}
+h2{font-size:1.2rem;margin:0 0 6px;color:var(--accent)}
 p{max-width:62ch;margin:0 0 12px}
 .muted{color:var(--muted)}
 .cards{display:grid;gap:14px;margin:26px 0}
-a.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;color:inherit;text-decoration:none}
+.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;color:inherit;text-decoration:none}
 a.card:hover,a.card:focus-visible{border-color:var(--accent)}
-a.card strong{font-size:1.2rem;color:var(--accent)}
-a.card span{display:block;color:var(--muted);margin-top:4px}
+.card p{color:var(--muted);margin:0 0 10px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--muted)}
+textarea{width:100%;min-height:220px;margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:.85rem/1.45 ui-monospace,Menlo,monospace;padding:10px}
+.status{color:var(--muted);font-size:.92rem;margin:8px 0 0}
+@media (max-width:560px){textarea{font-size:16px}.tools .btn{flex:1 1 auto}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Money Tools</h1>
-  <p class="muted">Two free tools for paying down debt and building savings. They work on phones and computers, no account needed.</p>
+  <p class="muted">Free tools for paying down debt and building savings. They work on phones and computers, and you don't need an account.</p>
+
   <div class="cards">
-    <a class="card" href="budget-tracker.html"><strong>Budget tracker</strong><span>Add the CSV files from your bank and card websites and see your spending by category against your plan, by month or by paycheck.</span></a>
-    <a class="card" href="five-year-money-plan.html"><strong>Five-year money plan</strong><span>A worksheet for your monthly plan, loan payoff date, savings goals and to-do list.</span></a>
+    <a class="card" href="budget-tracker.html">
+      <h2>Budget tracker</h2>
+      <p>Add the CSV files from your bank and card websites and see your spending by category against your plan, by month or by paycheck.</p>
+      <span class="btn">Open the budget tracker</span>
+    </a>
+
+    <div class="card">
+      <h2>Build my 5-year plan with Claude</h2>
+      <p>Claude asks you a few questions at a time: your pay, bills, debts, savings and goals. Then it builds a five-year plan around your answers, with a monthly budget, a debt payoff timeline, yearly milestones and a checklist for this month. A free Claude account works.</p>
+      <div class="tools">
+        <a class="btn primary" id="go" href="https://claude.ai/new" target="_blank" rel="noopener">Start with Claude</a>
+        <button class="btn" id="copy" type="button">Copy the prompt</button>
+      </div>
+      <p class="status" id="status">The button opens Claude in a new tab with the prompt filled in. If the message box is empty, tap Copy the prompt and paste it there.</p>
+      <details>
+        <summary>See or edit the prompt</summary>
+        <textarea id="prompt" aria-label="Prompt for Claude"></textarea>
+      </details>
+    </div>
   </div>
-  <p><strong>Your data stays with you.</strong> Everything you enter is saved only in your own browser on your own device. Nothing is sent anywhere, and nobody else who opens these pages can see it. Clearing your browser data erases it, so use "Save a copy with my data" or "Download backup" now and then.</p>
+
+  <p><strong>Your data stays with you.</strong> What you type into the budget tracker is saved only in your own browser on your own device. Nothing is sent anywhere, and nobody else who opens these pages can see it. Clearing your browser data erases it, so use "Save a copy with my data" or "Download backup" now and then. Your 5-year plan lives in your own Claude chat.</p>
   <p class="muted">On a phone, use your browser's "Add to Home Screen" to open these like an app. These are planning tools, not financial advice.</p>
 </div>
+<script>
+(function(){
+const PROMPT = `I'd like your help building a personalized 5-year money plan. Please interview me first. Ask me a few questions at a time (no more than three per message), in plain English, and wait for my answers. I can skip anything that doesn't apply or say "not sure."
+
+Please cover:
+1. My age, where I live, and whether I rent, own, or live with family.
+2. My pay: take-home per paycheck and how often I'm paid, plus my gross salary if I know it.
+3. My monthly costs: housing, utilities, insurance, phone, car, groceries, eating out, subscriptions and other regular bills.
+4. My debts: each one's balance, interest rate and minimum payment (student loans, credit cards, car loan and so on).
+5. My savings: emergency fund, other savings, and where it's kept.
+6. Retirement: 401(k) or IRA balances, what I contribute, and any employer match.
+7. My goals for the next five years, in order of priority (for example: pay off debt, build an emergency fund, buy a home, school, a wedding, travel, investing).
+8. Big costs or changes coming up (moving, school, a new car, a baby, a job change).
+9. How hands-on I want to be and how much risk I'm comfortable with.
+
+When you have enough, build my plan:
+- A short summary of where I stand now.
+- A monthly budget showing where each paycheck goes.
+- The plan in phases (for example: a starter emergency fund, then high-interest debt, then bigger goals), with the monthly amount for each goal and when each phase should end.
+- A debt payoff timeline with estimated payoff dates and total interest. Show your math.
+- Year-by-year milestones for the next five years.
+- A short checklist of what to do this month.
+- Risks or gaps, and what I should confirm with my lender, HR or a professional.
+
+Use my real numbers, round sensibly, and tell me when you're assuming something. Keep it plain and practical. Remind me you're not a financial advisor and this isn't financial advice. At the end, offer to adjust the plan, and suggest I save it so I can revisit it each year.`;
+const ta=document.getElementById('prompt'), go=document.getElementById('go'), st=document.getElementById('status');
+ta.value=PROMPT;
+function link(){ const enc=encodeURIComponent(ta.value); go.href = enc.length<7000 ? 'https://claude.ai/new?q='+enc : 'https://claude.ai/new'; }
+function copy(){
+  return (navigator.clipboard?navigator.clipboard.writeText(ta.value):Promise.reject())
+    .then(()=>{ st.textContent='Copied. If Claude opens with an empty message box, paste it in.'; })
+    .catch(()=>{ ta.closest('details').open=true; ta.focus(); ta.select(); st.textContent='Select all the text in the box, copy it, then paste it into Claude.'; });
+}
+ta.addEventListener('input',link);
+document.getElementById('copy').onclick=copy;
+go.addEventListener('click',()=>{ copy(); });
+link();
+})();
+</script>
 </body>
 </html>
